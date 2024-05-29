@@ -114,12 +114,15 @@ export default function Home() {
       </div>
       <div className={styles.graphs}>
         <div className={styles.graph}>
+          <h3>Inside Temperature</h3>
           <LineChart />
         </div>
         <div className={styles.graph}>
+          <h3>outside Temperature</h3>
           <LineChart />
         </div>
         <div className={styles.graph}>
+          <h3>Inside Temperature</h3>
           <LineChart />
         </div>
       </div>
