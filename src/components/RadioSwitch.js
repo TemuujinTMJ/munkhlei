@@ -6,6 +6,7 @@ const RadioSwitch = ({isChecked, setIsChecked}) => {
   return (
     <label className={styles.switch}>
       <input
+        disabled
         type="checkbox"
         checked={isChecked}
         onChange={() => setIsChecked(!isChecked)}

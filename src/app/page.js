@@ -3,7 +3,7 @@
 import styles from "./page.module.css";
 import RadioSwitch from "@/components/RadioSwitch";
 import LineChart from "@/components/Graph";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DateTime from "@/components/Time";
 
 export default function Home() {
@@ -11,6 +11,72 @@ export default function Home() {
   const [isChecked, setIsChecked] = useState(false);
   const [isChecked1, setIsChecked1] = useState(false);
   const [isChecked2, setIsChecked2] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [messages, setMessages] = useState([]);
+  const [state, setState] = useState([]);
+  const [info, setInfo] = useState({});
+
+  useEffect(() => {
+    const socket = new WebSocket("ws://104.197.225.246:1880/ws/receive");
+
+    socket.addEventListener("open", (event) => {
+      console.log("WebSocket is open now.");
+    });
+
+    socket.addEventListener("message", (event) => {
+      console.log("Message from server ", event.data);
+      setMessages((prevMessages) => [...prevMessages, event.data]);
+      setLoading(false);
+    });
+
+    // socket.addEventListener('error', (event) => {
+    //   console.error('WebSocket error observed:', event);
+    // });
+
+    socket.addEventListener("close", (event) => {
+      console.log("WebSocket is closed now.");
+    });
+
+    return () => {
+      socket.close();
+    };
+  }, []);
+
+  useEffect(() => {
+    setState(
+      messages
+        .map((item) => {
+          const parsedItem = JSON.parse(item);
+          return Array.isArray(parsedItem) ? null : parsedItem;
+        })
+        .filter((item) => item !== null)
+        .reduce((acc, obj) => {
+          return { ...acc, ...obj };
+        }, {})
+    );
+    const data = [
+      '{"orohSens":true,"garahSens":true,"garUdirdlaga":true,"id":"73f23661-68a5-40f0-b099-1c49653dbb0b","from":"webserver"}',
+    ];
+    const data1 = [
+      '{ "id": "73f23661-68a5-40f0-b099-1c49653dbb0b", "inTemp": 0.00, "outTemp": -127.00, "humidity": 0.00, "LeftDoor": false, "RightDoor": false, "isInsert": true, "user": 1 }',
+    ];
+
+    // Merge all objects into a single object
+    const cleanedData = data.reduce((acc, jsonString) => {
+      const parsedObject = JSON.parse(jsonString);
+      return { ...acc, ...parsedObject };
+    }, {});
+    const cleanedData1 = data1.reduce((acc, jsonString) => {
+      const parsedObject = JSON.parse(jsonString);
+      return { ...acc, ...parsedObject };
+    }, {});
+    setIsChecked(cleanedData.orohSens);
+    setIsChecked1(cleanedData.garahSens);
+    setIsChecked2(cleanedData.garUdirdlaga);
+    setInfo(cleanedData1);
+  }, [messages]);
+  if (loading) return loading
+
   return (
     <main className={styles.main}>
       <div className={styles.top}>
@@ -35,7 +101,7 @@ export default function Home() {
           >
             <h3>Температур гадна</h3>
             <div className={styles.cool}>
-              <h4>50</h4>
+              <h4>{info.outTemp} °C</h4>
               <img src="/outside.png" alt="outside" className={styles.icon} />
             </div>
           </div>
@@ -45,9 +111,9 @@ export default function Home() {
               background: "linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)",
             }}
           >
-            <h3>Температур дотор</h3>
+            <h3>Температур дотор </h3>
             <div className={styles.cool}>
-              <h4>50</h4>
+              <h4>{info.inTemp} °C</h4>
               <img src="/inside.png" alt="inside" className={styles.icon} />
             </div>
           </div>
@@ -59,7 +125,7 @@ export default function Home() {
           >
             <h3>Хаалга</h3>
             <div className={styles.cool}>
-              <h4>50</h4>
+              <h4>{info.outTemp}</h4>
               <img src="/door.png" alt="door" className={styles.icon} />
             </div>
           </div>
@@ -71,7 +137,7 @@ export default function Home() {
           >
             <h3>Цонх</h3>
             <div className={styles.cool}>
-              <h4>50</h4>
+              <h4>{info.outTemp}</h4>
               <img src="/window.png" alt="window" className={styles.icon} />
             </div>
           </div>
@@ -114,16 +180,16 @@ export default function Home() {
       </div>
       <div className={styles.graphs}>
         <div className={styles.graph}>
-          <h3>Inside Temperature</h3>
-          <LineChart />
+          <h3>Дотор Температур</h3>
+          <LineChart data={messages} type="avg_intemp" loading />
         </div>
         <div className={styles.graph}>
-          <h3>outside Temperature</h3>
-          <LineChart />
+          <h3>Гадна Температур</h3>
+          <LineChart data={messages} type="avg_outtemp" loading />
         </div>
         <div className={styles.graph}>
-          <h3>Inside Temperature</h3>
-          <LineChart />
+          <h3>Чийгшил</h3>
+          <LineChart data={messages} type="avg_humidity" loading />
         </div>
       </div>
       <div className={styles.copyright}>
